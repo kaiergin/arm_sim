@@ -1,9 +1,9 @@
 import math
-import time
 import signal
 from controller import Controller
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 
 # constants for simulation
 WEIGHT_KG = 1
@@ -11,21 +11,26 @@ GRAVITY_N = 9.8
 DISTANCE_M = 1
 TIMESTEP = 0.01
 TRAINING = False
+EPOCH_LENGTH = 200 # corresponds to 2 seconds
 
 # maxes and mins for simulation
 theta_max = math.pi/2.5
 theta_min = -math.pi/2.5
-theta_dot_max = 2
-theta_dot_min = -2
-min_throttle = 0
-max_throttle = 20
-action_space = (max_throttle - min_throttle) * 2
+theta_dot_max = 5
+theta_dot_min = -5
+throttle_max = 20
+throttle_min = 0
+
+# calculates ranges
+theta_range = theta_max - theta_min
+theta_dot_range = theta_dot_max - theta_dot_min
+throttle_range = throttle_max - throttle_min
 
 # initial values for simulation
-theta = (2*np.random.rand() - 1) * (math.pi/3)
+theta = 0
 theta_dot = 0
 
-# Calculations
+# calculations
 force_down = WEIGHT_KG * GRAVITY_N
 force_weight = math.cos(theta) * force_down
 force_prop = 0
@@ -37,20 +42,20 @@ done = False
 iterations = 0
 epochs = 0
 q_reward = 0
-learning_iterations = 1000000
+if len(sys.argv) > 1:
+    learning_iterations = int(sys.argv[1])
+else:
+    learning_iterations = 1000 # default to 10 seconds total
 
-# calculates ranges and buckets (not used anymore)
-theta_range = (theta_max - theta_min)
-theta_dot_range = (theta_dot_max - theta_dot_min)
-theta_step = theta_range / 40
-theta_dot_step = theta_range / 40
-theta_bucket = int(theta_range // theta_step)
-theta_dot_bucket = int(theta_dot_range // theta_dot_step)
+# creates arguments for controller constructor
+theta_tuple = (theta_min, theta_max)
+theta_dot_tuple = (theta_dot_min, theta_dot_max)
+throttle_tuple = (throttle_min, throttle_max)
 
 # lists for final graphs
 data = []
 graph_q_reward = []
-ctrl = Controller(theta_min, theta_max, min_throttle, max_throttle)
+ctrl = Controller(theta_tuple, theta_dot_tuple, throttle_tuple)
 
 def sigmoid(x):
     return 1 / (1 + math.e**(-x))
@@ -77,15 +82,17 @@ while running:
     state = (theta, theta_dot)
     # save state of arm
     prev_state = state
-    # get force from controller
+    # get force from controller and put it in boundaries between 0 and 20
     force_prop = ctrl.get_motor_force(state)
-    force_prop = max(force_prop, min_throttle)
-    force_prop = min(force_prop, max_throttle)
+    force_prop = max(force_prop, throttle_min)
+    force_prop = min(force_prop, throttle_max)
     # counter weight (between 5 and 10?)
     force_weight = math.cos(theta) * force_down
     # calculate changes in state
     torque = (force_prop - force_weight) * DISTANCE_M
     theta_dot += torque * TIMESTEP
+    theta_dot = max(theta_dot, theta_dot_min)
+    theta_dot = min(theta_dot, theta_dot_max)
     theta += theta_dot * TIMESTEP
     # if changes are out of bounds, set to max/min
     if theta < theta_min:
@@ -101,9 +108,7 @@ while running:
     state = (theta, theta_dot)
     # scales theta/theta_dot to calculate reward of state
     theta_scaled = (theta / theta_range) * 3
-    theta_dot_scaled = min(theta_dot, theta_dot_max)
-    theta_dot_scaled = max(theta_dot, theta_dot_min)
-    theta_dot_scaled = (theta_dot_scaled / theta_dot_range) * 3
+    theta_dot_scaled = (theta_dot / theta_dot_range) * 3
     # if the state is terminal (out of bounds) sets reward to 0
     if done:
         reward = 0
@@ -122,7 +127,7 @@ while running:
             theta = (2*np.random.rand() - 1) * (math.pi/3)
             theta_dot = 0
     # at end of epoch
-    if iterations % 200 == 0 and iterations < learning_iterations:
+    if iterations % EPOCH_LENGTH == 0 and iterations < learning_iterations:
         if TRAINING:
             theta = (2*np.random.rand() - 1) * (math.pi/3)
             theta_dot = 0
@@ -132,7 +137,7 @@ while running:
         ctrl.replay()
 
     # at end of epoch
-    if iterations % 200 == 0:
+    if iterations % EPOCH_LENGTH == 0:
         epochs += 1
         # grabs for ctrl+c
         signal.signal(signal.SIGINT, signal_handler)
