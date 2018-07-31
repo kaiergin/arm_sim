@@ -10,7 +10,7 @@ WEIGHT_KG = 1
 GRAVITY_N = 9.8
 DISTANCE_M = 1
 TIMESTEP = 0.01
-TRAINING = False
+TRAINING = True
 EPOCH_LENGTH = 200 # corresponds to 2 seconds
 
 # maxes and mins for simulation
