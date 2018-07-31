@@ -8,7 +8,7 @@ class Controller:
         self.throttle_max = throttle_max
 
     # must return float between 0 and 20
-    def get_motor_force(self, theta, theta_dot):
+    def get_motor_force(self, state):
         return 0
 
     # gives the controller info to remember for training
