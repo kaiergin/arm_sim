@@ -1,6 +1,6 @@
 import math
 import signal
-from controller import Controller
+import controller as c
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
@@ -42,8 +42,8 @@ done = False
 iterations = 0
 epochs = 0
 q_reward = 0
-if len(sys.argv) > 1:
-    learning_iterations = int(sys.argv[1])
+if len(sys.argv) > 2:
+    learning_iterations = int(sys.argv[2])
 else:
     learning_iterations = 1000 # default to 10 seconds total
 
@@ -55,7 +55,15 @@ throttle_tuple = (throttle_min, throttle_max)
 # lists for final graphs
 data = []
 graph_q_reward = []
-ctrl = Controller(theta_tuple, theta_dot_tuple, throttle_tuple)
+if len(sys.argv) > 1:
+    if sys.argv[1] == "PID":
+        ctrl = c.PidController(theta_tuple, theta_dot_tuple, throttle_tuple)
+    elif sys.argv[1] == "QTbl":
+        ctrl = c.QTblController(theta_tuple, theta_dot_tuple, throttle_tuple)
+    else:
+        ctrl = c.Controller(theta_tuple, theta_dot_tuple, throttle_tuple)
+else:
+    ctrl = c.Controller(theta_tuple, theta_dot_tuple, throttle_tuple)
 
 def sigmoid(x):
     return 1 / (1 + math.e**(-x))
