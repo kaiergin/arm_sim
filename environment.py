@@ -10,7 +10,6 @@ WEIGHT_KG = 1
 GRAVITY_N = 9.8
 DISTANCE_M = 1
 TIMESTEP = 0.01
-TRAINING = True
 EPOCH_LENGTH = 200 # corresponds to 2 seconds
 
 # maxes and mins for simulation
@@ -39,6 +38,7 @@ torque = (force_prop - force_weight) * DISTANCE_M
 # variables
 running = True
 done = False
+training = True
 iterations = 0
 epochs = 0
 q_reward = 0
@@ -81,8 +81,8 @@ def signal_handler(signal, frame):
 
 # the reward function used
 def get_reward(theta, theta_dot):
-    return sigmoid(theta) * (1 - sigmoid(theta)) +\
-        0.5 * sigmoid(theta_dot) * (1 - sigmoid(theta_dot))
+    return sigmoid(theta) * (1 - sigmoid(theta)) \
+        + sigmoid(theta_dot) * (1 - sigmoid(theta_dot))
 
 print('Stage 1: (Learning on)')
 while running:
@@ -131,12 +131,12 @@ while running:
         done = False
         # if training is on, randomizes theta/theta_dot so the conroller
         # can continue learning
-        if TRAINING:
+        if training and False:
             theta = (2*np.random.rand() - 1) * (math.pi/3)
             theta_dot = 0
     # at end of epoch
     if iterations % EPOCH_LENGTH == 0 and iterations < learning_iterations:
-        if TRAINING:
+        if training:
             theta = (2*np.random.rand() - 1) * (math.pi/3)
             theta_dot = 0
         # decays learning rate
@@ -157,6 +157,7 @@ while running:
         print('Stage 2: (Learning off)')
         # turns learning of controller off
         ctrl.cut_epsilon()
+        training = False
 
     data.append(theta)
     # kills program after 1.5 * learning_iterations

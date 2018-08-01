@@ -83,7 +83,7 @@ class QTblController:
         self.theta_dot_buckets = int(self.get_theta_dot_buckets(self.theta_dot_range))
         self.q_table = np.zeros((self.theta_buckets, self.theta_dot_buckets, self.action_space))
         self.epsilon = 1.0
-        self.epsilon_decay = 0.9999
+        self.epsilon_decay = 0.99999
         self.alpha = 0.01
         self.epsilon_min = 0.01
         self.gamma = 0.95
@@ -126,10 +126,14 @@ class QTblController:
         prev_state_bucket = self.get_bucket(prev_state)
         current_state_bucket = self.get_bucket(current_state)
         action = int(action * self.extra_action)
+        '''
         self.q_table[prev_state_bucket][action] +=                     \
                 self.alpha * (reward + self.gamma *                    \
                 np.amax(self.q_table[current_state_bucket]) -          \
                 self.q_table[prev_state_bucket][action])
+        '''
+        hold = reward if reward == 0 else reward + self.gamma * np.amax(self.q_table[current_state_bucket])
+        self.q_table[prev_state_bucket][action] = hold
 
     # called at end of epoch, used for training
     def replay(self):
@@ -144,3 +148,13 @@ class QTblController:
     # should turn off learning for controller
     def cut_epsilon(self):
         self.epsilon = 0.0
+
+    def save_table(self):
+        save_file = open('q_table','wb')
+        np.save(save_file, self.q_table)
+
+    def load_table(self, table):
+        load_file = open(table, 'rb')
+        self.q_table = np.load(load_file)
+        self.epsilon = 0.0
+        self.epsilon_min = 0.0
