@@ -153,8 +153,8 @@ class QTblController:
         save_file = open('q_table','wb')
         np.save(save_file, self.q_table)
 
-    def load_table(self, table):
-        load_file = open(table, 'rb')
+    def load_table(self):
+        load_file = open('q_table', 'rb')
         self.q_table = np.load(load_file)
         self.epsilon = 0.0
         self.epsilon_min = 0.0

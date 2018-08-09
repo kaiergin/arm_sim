@@ -163,7 +163,7 @@ while running:
     # kills program after 1.5 * learning_iterations
     if iterations == int(learning_iterations * 1.5):
         running = False
-
+ctrl.save_table()
 plt.plot(data)
 plt.show()
 plt.plot(graph_q_reward)
