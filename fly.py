@@ -2,7 +2,8 @@
 # import python libraries
 import time
 import getopt, sys
-import conroller as c
+import controller as c
+import math
 
 # import rcpy library
 # This automatically initizalizes the robotics cape
@@ -21,7 +22,16 @@ clck = clock.Clock(srvo, 0.02)
 servo.enable()
 clck.start()
 srvo.set(-1.0)
-ctrl = c.QTblController(1,1,1)
+theta_max = math.pi/2.5
+theta_min = -math.pi/2.5
+theta_dot_max = 5
+theta_dot_min = -5
+throttle_max = 20
+throttle_min = 0
+theta_tuple = (theta_min, theta_max)
+theta_dot_tuple = (theta_dot_min, theta_dot_max)
+throttle_tuple = (throttle_min, throttle_max)
+ctrl = c.QTblController(theta_tuple, theta_dot_tuple, throttle_tuple)
 ctrl.load_table()
 
 for i in range(3, 0, -1):
@@ -30,14 +40,15 @@ for i in range(3, 0, -1):
 
 data = mpu9250.read()
 t0 = time.time()
-theta_zero = data['tb'][0]
+t00 = time.time()
+theta_zero = -data['tb'][0]
 
 try:
-    while True:
+    while time.time() < t00 + 5:
          data = mpu9250.read()
          t1 = time.time()
          dt = t1 - t0
-         theta = data['tb'][0] # theta
+         theta = -data['tb'][0] # theta
          d = (theta - theta_zero) / dt # theta_dot
 
          state = (theta, d)
@@ -49,16 +60,12 @@ try:
          throttle = max(throttle, -1.0)
          throttle = min(throttle,  1.0)
 
-         #srvo.set(throttle)
-         print(throttle)
+         srvo.set(throttle)
+         print(throttle, theta, d)
          time.sleep(0.05)
          t0 = t1
          theta_zero = theta
-
 except KeyboardInterrupt:
-    while throttle > -0.7:
-        print('shutdown:', throttle)
-        throttle = throttle - 0.05
-        srvo.set(throttle)
-        time.sleep(100.0)
     srvo.set(-1.0)
+srvo.set(-1.0)
+print("Done")
